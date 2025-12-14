@@ -601,9 +601,10 @@
       drawStat(statsCol1, row2Y, "Total Dives", count.toString(), labelSize, valueSize, "center");
       drawStat(statsCol2, row2Y, "Total Dive Time", formatDurationLong(totalTime), labelSize, valueSize, "center");
       drawStat(statsCol1, row3Y, "Average Dive Time", formatMinutes(avgTime), labelSize, valueSize, "center");
-      drawStat(statsCol2, row3Y, "Max Depth", `${maxDepth.toFixed(1)} m`, labelSize, valueSize, "center");
+      drawStat(statsCol2, row3Y, "Max Dive Time", formatMinutes(longest), labelSize, valueSize, "center");
       drawStat(statsCol1, row4Y, "Average Depth", `${avgDepth.toFixed(1)} m`, labelSize, valueSize, "center");
-      drawStat(statsCol2, row4Y, "Max Dive Time", formatMinutes(longest), labelSize, valueSize, "center");
+      drawStat(statsCol2, row4Y, "Max Depth", `${maxDepth.toFixed(1)} m`, labelSize, valueSize, "center");
+      
 
       // CTA just below stats
       const ctaY = row4Y + valueSize + 100;
