@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dive Wrapped</title>
+  <title>Scuba Wrapped</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Jersey+25&display=swap" rel="stylesheet">
@@ -53,6 +53,12 @@
       margin-bottom: 18px;
       align-items: stretch;
     }
+    .control-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+    }
     label {
       display: flex;
       flex-direction: column;
@@ -60,13 +66,23 @@
       font-size: 13px;
       color: var(--muted);
     }
-    input[type="file"], input[type="number"], button {
+    input[type="file"], input[type="number"], select {
       background: #0b1220;
       color: var(--text);
       border: 1px solid #1f2937;
       border-radius: 10px;
       padding: 10px 12px;
       font-size: 14px;
+    }
+    select {
+      appearance: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      padding-right: 32px;
+      background-image: linear-gradient(45deg, transparent 50%, #94a3b8 50%), linear-gradient(135deg, #94a3b8 50%, transparent 50%);
+      background-position: calc(100% - 16px) calc(50% - 3px), calc(100% - 10px) calc(50% - 3px);
+      background-size: 6px 6px, 6px 6px;
+      background-repeat: no-repeat;
     }
     input[type="number"] { width: 110px; }
     button {
@@ -81,6 +97,43 @@
     }
     button:active { transform: translateY(1px); box-shadow: 0 8px 20px rgba(252,76,2,0.25); }
     .status { margin: 8px 0 12px; color: var(--muted); font-size: 13px; }
+    .help {
+      margin: 0 0 12px;
+      font-size: 13px;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .help a {
+      color: var(--text);
+      text-decoration: none;
+      padding: 6px 10px;
+      border: 1px solid #1f2937;
+      border-radius: 8px;
+      background: #0b1220;
+    }
+    .help a:hover {
+      border-color: #334155;
+    }
+    .upload-btn {
+      cursor: pointer;
+      border: none;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      color: #0b0b0b;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      padding: 10px 14px;
+      border-radius: 10px;
+      box-shadow: 0 12px 30px rgba(252,76,2,0.35);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .upload-btn:active { transform: translateY(1px); box-shadow: 0 8px 20px rgba(252,76,2,0.25); }
+    .file-input {
+      display: none;
+    }
     .table-wrap {
       max-height: 320px;
       overflow: auto;
@@ -107,6 +160,29 @@
     }
     th { text-align: left; color: var(--muted); }
     tbody tr:hover { background: rgba(255,255,255,0.03); }
+    .render-output {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .render-img {
+      width: min(450px, 100%);
+      height: auto;
+      border-radius: 16px;
+      border: 1px solid #1f2937;
+      background: #0b1220;
+      display: block;
+    }
+    canvas {
+      display: none;
+    }
+    .mobile-tip {
+      color: var(--muted);
+      font-size: 12px;
+      text-align: center;
+      display: none;
+      margin-top: 8px;
+    }
     @media (max-width: 1024px) {
       body { padding: 16px; }
       .shell {
@@ -119,58 +195,73 @@
       .table-wrap {
         max-height: 40vh;
       }
-      canvas {
-        width: 100%;
-        max-width: 100%;
-        justify-self: stretch;
-      }
       h1 {
         font-size: 24px;
       }
-    }
-    canvas {
-      width: min(450px, 100%);
-      height: auto;
-      border-radius: 16px;
-      border: 1px solid #1f2937;
-      display: block;
-      justify-self: center;
+      .mobile-tip {
+        display: block;
+      }
     }
   </style>
 </head>
 <body>
   <div class="shell">
     <div>
-      <h1>Dive Wrapped</h1>
+      <h1>Scuba Wrapped</h1>
       <div class="controls">
-        <label>
-          CSV file
-          <input id="file-input" type="file" accept=".csv" />
-        </label>
-        <label>
-          Year to summarize
-          <input id="year-input" type="number" value="2025" min="1990" max="2100" />
-        </label>
-        <button id="generate-btn" type="button">Generate image</button>
-        <button id="download-btn" type="button">Download PNG</button>
+        <div class="control-row">
+          <label>
+            CSV file
+            <div style="display:flex; gap:8px; align-items:center;">
+              <button type="button" class="upload-btn" id="file-trigger">Upload CSV</button>
+              <input id="file-input" class="file-input" type="file" accept=".csv" />
+            </div>
+          </label>
+          <label>
+            Year & color
+            <div style="display:flex; gap:8px; align-items:center;">
+              <input id="year-input" type="number" value="2025" min="1990" max="2100" />
+              <select id="color-input" title="Change text color" aria-label="Change text color">
+                <option value="white">White</option>
+                <option value="black">Black</option>
+                <option value="orange">Orange</option>
+                <option value="yellow">Yellow</option>
+                <option value="cyan">Cyan</option>
+                <option value="magenta">Magenta</option>
+                <option value="lime">Lime</option>
+              </select>
+            </div>
+          </label>
+        </div>
       </div>
       <div class="status" id="status">Waiting for CSV...</div>
-      <div class="table-wrap" aria-label="Dive selection">
-        <table>
-          <thead>
-            <tr>
-              <th style="width:40px;">Use</th>
-              <th>Date</th>
-              <th>Title</th>
-            </tr>
-          </thead>
-          <tbody id="dive-rows">
-            <tr><td colspan="3" style="text-align:center;color:var(--muted);">No CSV loaded</td></tr>
-          </tbody>
-        </table>
+      <div class="help">
+        <span>Need to export from Garmin?</span>
+        <a href="https://support.garmin.com/en-US/?faq=NxZWyZYGqL17VNBMKDUjb5" target="_blank" rel="noreferrer">Help (?)</a>
       </div>
+      <details class="table-wrap" aria-label="Dive selection">
+        <summary style="padding:8px 10px; cursor:pointer;">Pick your Dives</summary>
+        <div style="padding: 0 10px 10px;">
+          <table>
+            <thead>
+              <tr>
+                <th style="width:40px;">Use</th>
+                <th>Date</th>
+                <th>Title</th>
+              </tr>
+            </thead>
+            <tbody id="dive-rows">
+              <tr><td colspan="3" style="text-align:center;color:var(--muted);">No CSV loaded</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </details>
     </div>
-    <canvas id="card" width="1080" height="1920" aria-label="Dive summary card"></canvas>
+    <div class="render-output">
+      <img id="rendered-img" class="render-img" alt="Scuba summary preview (long-press to save)" title="Long-press to save on mobile" />
+      <canvas id="card" width="1080" height="1920" aria-label="Dive summary card"></canvas>
+    </div>
+    <div class="mobile-tip" aria-hidden="true">Tip: long-press the image to download on mobile.</div>
   </div>
   <script>
     const state = {
@@ -185,32 +276,12 @@
     const ctx = canvas.getContext("2d");
     ctx.imageSmoothingEnabled = false;
     const tbodyEl = document.getElementById("dive-rows");
+    const renderedImg = document.getElementById("rendered-img");
+    const fileTrigger = document.getElementById("file-trigger");
 
+    fileTrigger.addEventListener("click", () => document.getElementById("file-input").click());
     document.getElementById("file-input").addEventListener("change", handleFile);
-    document.getElementById("generate-btn").addEventListener("click", () => {
-      if (!state.rows.length) {
-        setStatus("Please load a CSV first.");
-        return;
-      }
-      const year = parseInt(document.getElementById("year-input").value, 10);
-      const activeRows = state.rows.filter((_, idx) => state.selected[idx]);
-      state.summary = summarize(activeRows, state.headers, year);
-      renderWithFonts(state.summary, year);
-    });
-    document.getElementById("download-btn").addEventListener("click", () => {
-      if (!state.rows.length) {
-        setStatus("Please load a CSV first.");
-        return;
-      }
-      const year = parseInt(document.getElementById("year-input").value, 10);
-      const activeRows = state.rows.filter((_, idx) => state.selected[idx]);
-      state.summary = summarize(activeRows, state.headers, year);
-      renderWithFonts(state.summary, year);
-      const link = document.createElement("a");
-      link.download = "dive-wrapped.png";
-      link.href = canvas.toDataURL("image/png");
-      link.click();
-    });
+    document.getElementById("color-input").addEventListener("change", updateAndRender);
 
     function setStatus(msg) {
       statusEl.textContent = msg;
@@ -234,6 +305,7 @@
           state.selected = rows.map(() => true);
           renderTable();
           setStatus(`Loaded ${rows.length} rows. ${rows.length} selected.`);
+          updateAndRender();
         } catch (err) {
           console.error(err);
           setStatus("Problem reading CSV. Make sure it is a plain CSV export.");
@@ -403,6 +475,7 @@
           state.selected[idx] = checkbox.checked;
           const count = state.selected.filter(Boolean).length;
           setStatus(`Loaded ${state.rows.length} rows. ${count} selected.`);
+          updateAndRender();
         });
         tdCheck.appendChild(checkbox);
         tr.appendChild(tdCheck);
@@ -421,12 +494,16 @@
       tbodyEl.appendChild(fragment);
     }
 
-    function renderWithFonts(summary, year) {
+    function renderWithFonts(summary, year, statusMsg) {
       const ready = document.fonts?.ready;
-      if (ready && typeof ready.then === "function") {
-        ready.then(() => drawCard(summary, year));
-      } else {
+      const draw = () => {
         drawCard(summary, year);
+        if (statusMsg) setStatus(statusMsg);
+      };
+      if (ready && typeof ready.then === "function") {
+        ready.then(draw).catch(draw);
+      } else {
+        draw();
       }
     }
 
@@ -437,26 +514,27 @@
       ctx.save();
       ctx.textAlign = "center";
       ctx.textBaseline = "top";
-      ctx.fillStyle = "#ffffff";
+      const color = document.getElementById("color-input").value || "white";
+      ctx.fillStyle = color;
 
       const centerX = canvas.width / 2;
-      const titleY = canvas.height * 0.08;
-      ctx.font = "68px 'Jersey 25', 'Trebuchet MS', 'Futura', 'Segoe UI', sans-serif";
-      ctx.fillText("Dive Wrapped", centerX, titleY);
+      const titleY = canvas.height * 0.18;
+      ctx.font = "78px 'Jersey 25', 'Trebuchet MS', 'Futura', 'Segoe UI', sans-serif";
+      ctx.fillText("SCUBA", centerX, titleY);
 
-      ctx.font = "72px 'Jersey 25', 'Trebuchet MS', 'Futura', 'Segoe UI', sans-serif";
-      ctx.fillText(`${year}`, centerX, titleY + 80);
+      ctx.font = "83px 'Jersey 25', 'Trebuchet MS', 'Futura', 'Segoe UI', sans-serif";
+      ctx.fillText(`${year}`, centerX, titleY + 60);
 
-      const gridTop = canvas.height * 0.24;
-      const gridHeight = canvas.height * 0.5;
+      const gridTop = canvas.height * 0.26;
+      const gridHeight = canvas.height * 0.38;
       const col1X = canvas.width * 0.3;
       const col2X = canvas.width * 0.7;
       const row1Y = gridTop;
       const row2Y = gridTop + gridHeight / 3;
       const row3Y = gridTop + (2 * gridHeight) / 3;
 
-      const labelSize = 35; // 25% larger labels for subjects
-      const valueSize = 60;
+      const labelSize = 40; // 15% larger labels for subjects
+      const valueSize = 69;
 
       drawStat(col1X, row1Y, "Total Dives", count.toString(), labelSize, valueSize);
       drawStat(col2X, row1Y, "Total Dive Time", formatDurationLong(totalTime), labelSize, valueSize);
@@ -466,6 +544,13 @@
       drawStat(col2X, row3Y, "Max Dive Time", formatMinutes(longest), labelSize, valueSize);
 
       ctx.restore();
+
+      // Update visible image for long-press save on mobile
+      if (renderedImg) {
+        const url = canvas.toDataURL("image/png");
+        renderedImg.src = url;
+        renderedImg.alt = `Scuba summary for ${year}`;
+      }
     }
 
     function drawStat(x, y, label, value, labelSize, valueSize) {
@@ -473,6 +558,18 @@
       ctx.fillText(label, x, y);
       ctx.font = `${valueSize}px 'Jersey 25', 'Trebuchet MS', 'Futura', 'Segoe UI', sans-serif`;
       ctx.fillText(value, x, y + labelSize + 3); // 3px spacing
+    }
+
+    function updateAndRender() {
+      if (!state.rows.length) {
+        setStatus("Please load a CSV first.");
+        return null;
+      }
+      const year = parseInt(document.getElementById("year-input").value, 10);
+      const activeRows = state.rows.filter((_, idx) => state.selected[idx]);
+      state.summary = summarize(activeRows, state.headers, year);
+      renderWithFonts(state.summary, year, `Rendered image with ${state.summary.count} dives in ${year}.`);
+      return state.summary;
     }
 
     renderWithFonts({ count: 0, totalTime: 0, avgTime: 0, longest: 0, avgDepth: 0, maxDepth: 0 }, new Date().getFullYear());
