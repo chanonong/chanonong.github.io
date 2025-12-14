@@ -6,7 +6,7 @@
   <title>Scuba Wrapped</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Jersey+25&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
   <style>
     :root {
       --bg: #0f172a;
@@ -15,7 +15,7 @@
       --accent-2: #ff7847;
       --muted: #94a3b8;
       --text: #e5e7eb;
-      --font: "Jersey 25", "Trebuchet MS", "Futura", "Segoe UI", sans-serif;
+      --font: "Futura", "Jersey 25", "Trebuchet MS", "Futura", "Segoe UI", sans-serif;
     }
     * { box-sizing: border-box; }
     body {
@@ -66,7 +66,7 @@
       font-size: 13px;
       color: var(--muted);
     }
-    input[type="file"], input[type="number"], select {
+    input[type="file"], input[type="number"], input[type="text"], select {
       background: #0b1220;
       color: var(--text);
       border: 1px solid #1f2937;
@@ -210,31 +210,34 @@
     <div>
       <h1>Scuba Wrapped</h1>
       <div class="controls">
-        <div class="control-row">
-          <label>
-            CSV file
-            <div style="display:flex; gap:8px; align-items:center;">
-              <button type="button" class="upload-btn" id="file-trigger">Upload CSV</button>
-              <input id="file-input" class="file-input" type="file" accept=".csv" />
-              <span style="color:var(--muted); font-size:12px;">(supports Garmin & Shearwater exports)</span>
-            </div>
-          </label>
-          <label>
-            Year & color
-            <div style="display:flex; gap:8px; align-items:center;">
-              <input id="year-input" type="number" value="2025" min="1990" max="2100" />
-              <select id="color-input" title="Change text color" aria-label="Change text color">
-                <option value="white">White</option>
-                <option value="black">Black</option>
-                <option value="orange">Orange</option>
-                <option value="yellow">Yellow</option>
-                <option value="cyan">Cyan</option>
-                <option value="magenta">Magenta</option>
-                <option value="lime">Lime</option>
-              </select>
-            </div>
-          </label>
-        </div>
+        <label>
+          CSV file
+          <div style="display:flex; gap:8px; align-items:center;">
+            <button type="button" class="upload-btn" id="file-trigger">Upload CSV</button>
+            <input id="file-input" class="file-input" type="file" accept=".csv" />
+            <span style="color:var(--muted); font-size:12px;">(supports Garmin & Shearwater exports)</span>
+          </div>
+        </label>
+        <label>
+          Card title
+          <input id="title-input" type="text" placeholder="${year} wrapped" style="margin-top:8px;" />
+          <span style="color:var(--muted); font-size:12px;">Appears in the top-left of the image.</span>
+        </label>
+        <label>
+          Year & color
+          <div style="display:flex; gap:8px; align-items:center;">
+            <input id="year-input" type="number" value="2025" min="1990" max="2100" />
+            <select id="color-input" title="Change text color" aria-label="Change text color">
+              <option value="white">White</option>
+              <option value="black">Black</option>
+              <option value="orange">Orange</option>
+              <option value="yellow">Yellow</option>
+              <option value="cyan">Cyan</option>
+              <option value="magenta">Magenta</option>
+              <option value="lime">Lime</option>
+            </select>
+          </div>
+        </label>
       </div>
       <div class="status" id="status">Waiting for CSV...</div>
       <details class="help">
@@ -293,10 +296,14 @@
     const tbodyEl = document.getElementById("dive-rows");
     const renderedImg = document.getElementById("rendered-img");
     const fileTrigger = document.getElementById("file-trigger");
+    const yearInput = document.getElementById("year-input");
+    const titleInput = document.getElementById("title-input");
 
     fileTrigger.addEventListener("click", () => document.getElementById("file-input").click());
     document.getElementById("file-input").addEventListener("change", handleFile);
     document.getElementById("color-input").addEventListener("change", updateAndRender);
+    yearInput.addEventListener("input", updateAndRender);
+    titleInput.addEventListener("input", updateAndRender);
 
     function setStatus(msg) {
       statusEl.textContent = msg;
@@ -535,44 +542,76 @@
       ctx.clearRect(0, 0, canvas.width, canvas.height); // transparent background only
 
       ctx.save();
-      ctx.textAlign = "center";
+      ctx.textAlign = "left";
       ctx.textBaseline = "top";
       const color = document.getElementById("color-input").value || "white";
       ctx.fillStyle = color;
 
-      const centerX = canvas.width / 2;
-      const titleY = canvas.height * 0.18;
-      ctx.font = "104px 'Jersey 25', 'Trebuchet MS', 'Futura', 'Segoe UI', sans-serif";
-      ctx.fillText("SCUBA", centerX, titleY);
+      const col1X = canvas.width * 0.25;
+      const col2X = canvas.width * 0.75;
+      const colWidth = canvas.width * 0.3;
+      const rowHeight = canvas.height * 0.1;
+      const row1Y = canvas.height * 0.14;
+      const row2Y = row1Y + rowHeight;
+      const row3Y = row2Y + rowHeight;
+      const row4Y = row3Y + rowHeight;
 
-      ctx.font = "110px 'Jersey 25', 'Trebuchet MS', 'Futura', 'Segoe UI', sans-serif";
-      ctx.fillText(`${year}`, centerX, titleY + 80);
+      const titleInputEl = document.getElementById("title-input");
+      const customTitle = titleInputEl?.value?.trim() ? titleInputEl.value.trim() : `${year} wrapped`;
 
-      const gridTop = canvas.height * 0.26;
-      const gridHeight = canvas.height * 0.38;
-      const col1X = canvas.width * 0.3;
-      const col2X = canvas.width * 0.7;
-      const row1Y = gridTop;
-      const row2Y = gridTop + gridHeight / 3;
-      const row3Y = gridTop + (2 * gridHeight) / 3;
+      const row1Bottom = row1Y + rowHeight - 50; // 50px padding from bottom of row 1
 
-      const labelSize = 53; // larger labels for subjects
-      const valueSize = 92;
+      // Row 1, Col 1: custom title (center, bottom aligned)
+      ctx.textBaseline = "bottom";
+      ctx.font = "68px 'Futura', 'Trebuchet MS', 'Futura', 'Segoe UI', sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText(customTitle, col1X, row1Bottom);
 
-      drawStat(col1X, row1Y, "Total Dives", count.toString(), labelSize, valueSize);
-      drawStat(col2X, row1Y, "Total Dive Time", formatDurationLong(totalTime), labelSize, valueSize);
-      drawStat(col1X, row2Y, "Average Dive Time", formatMinutes(avgTime), labelSize, valueSize);
-      drawStat(col2X, row2Y, "Max depth", `${maxDepth.toFixed(1)} m`, labelSize, valueSize);
-      drawStat(col1X, row3Y, "Average Depth", `${avgDepth.toFixed(1)} m`, labelSize, valueSize);
-      drawStat(col2X, row3Y, "Max Dive Time", formatMinutes(longest), labelSize, valueSize);
+      // Row 1, Col 2: icon + SCUBA (center aligned within column, bottom aligned)
+      ctx.textAlign = "left";
+      ctx.font = "68px 'Futura', 'Trebuchet MS', 'Futura', 'Segoe UI', sans-serif";
+      const scubaText = "SCUBA";
+      const scubaWidth = ctx.measureText(scubaText).width;
+      const logoScale = 0.65;
+      const logoWidth = 122.88 * logoScale;
+      const logoHeight = 121.21 * logoScale;
+      const gap = 14;
+      const col2Center = col2X;
+      const totalWidth = logoWidth + gap + scubaWidth;
+      const iconX = col2Center - totalWidth / 2;
+      const iconY = row1Bottom - logoHeight;
+      if (!drawCard.scubaPath) {
+        drawCard.scubaPath = new Path2D("M100.07,67.24c-.44-10.1-3-13.34-6.11-13.38A59.88,59.88,0,0,1,93.86,80c3.5.24,5.78-3.94,6.21-12.77Zm18.27-47.48a4.54,4.54,0,1,1-4.53,4.53,4.53,4.53,0,0,1,4.53-4.53ZM109,0a7.23,7.23,0,1,1-7.22,7.22A7.22,7.22,0,0,1,109,0ZM18.12,87.85Zm45,2.47A10.29,10.29,0,1,1,52.83,100.6,10.29,10.29,0,0,1,63.11,90.32ZM9.66,69.89a6.14,6.14,0,0,1,3.09-2v-.34a63.9,63.9,0,0,1,1-10.52,16.18,16.18,0,0,1,4-9.2l.48-.5-1.43-.46c-2-62.7,96.25-54.49,94.79.4,0,.65,0,1.28-.11,1.88a14.68,14.68,0,0,1,2.37,8,55.7,55.7,0,0,1,1.06,10.4,46.07,46.07,0,0,1-1.05,10c-.1,5-1.71,8.52-4.59,10.91a12.08,12.08,0,0,1-4.78,2.41,43,43,0,0,1-8.84,15.58A43.87,43.87,0,0,1,81,117.25a41.53,41.53,0,0,1-17.13,3.8,35.7,35.7,0,0,1-16.47-3.92,35,35,0,0,1-28.06,2.07A30.84,30.84,0,0,1,6.85,111,26.13,26.13,0,0,1,.29,97.17C-.92,89,1.58,79.58,9.66,69.89Zm8.89-.56a.86.86,0,0,1,0,.8,56.09,56.09,0,0,0,.66,6.47,1,1,0,0,1,.13.78l.1.52c.72,5.21,3.6,7.5,7.89,7.89H43.43c10.35-.58,11.64-6.27,16.12-8.67a9.92,9.92,0,0,1,9.5.29c4.06,2.6,5.4,8.1,14.82,8.1H98.39c6.11.65,9.72-1.74,9.65-8.6a44.4,44.4,0,0,0,0-19.17c0-6.14-3.67-8.55-9.23-9H27.22c-4.23,1.18-7.11,3.86-7.75,9a56.23,56.23,0,0,0-.92,11.59ZM15.12,83.64C12.74,88,12,92,12.52,95.38A13.88,13.88,0,0,0,16,102.69a18.54,18.54,0,0,0,7.48,4.91,22.36,22.36,0,0,0,12.51.69C31.55,104,28.23,100.14,25.9,95.8A31.57,31.57,0,0,1,23.8,91a13,13,0,0,1-8.68-7.36Zm48,1.06a15.91,15.91,0,1,1-15.9,15.9,15.9,15.9,0,0,1,15.9-15.9Z");
+      }
+      ctx.save();
+      ctx.translate(iconX, iconY);
+      ctx.scale(logoScale, logoScale);
+      ctx.fill(drawCard.scubaPath);
+      ctx.restore();
+      ctx.fillText(scubaText, iconX + logoWidth + gap, row1Bottom);
+
+      // reset baseline for remaining rows
+      ctx.textBaseline = "top";
+
+      // Stats rows (rows 2-4)
+      const labelSize = 45;
+      const valueSize = 100;
+      const statsCol1 = canvas.width * 0.3;
+      const statsCol2 = canvas.width * 0.7;
+      drawStat(statsCol1, row2Y, "Total Dives", count.toString(), labelSize, valueSize, "center");
+      drawStat(statsCol2, row2Y, "Total Dive Time", formatDurationLong(totalTime), labelSize, valueSize, "center");
+      drawStat(statsCol1, row3Y, "Average Dive Time", formatMinutes(avgTime), labelSize, valueSize, "center");
+      drawStat(statsCol2, row3Y, "Max Depth", `${maxDepth.toFixed(1)} m`, labelSize, valueSize, "center");
+      drawStat(statsCol1, row4Y, "Average Depth", `${avgDepth.toFixed(1)} m`, labelSize, valueSize, "center");
+      drawStat(statsCol2, row4Y, "Max Dive Time", formatMinutes(longest), labelSize, valueSize, "center");
 
       // CTA just below stats
-      const ctaY = row3Y + valueSize + 80;
-      ctx.font = "37px 'Jersey 25', 'Trebuchet MS', 'Futura', 'Segoe UI', sans-serif";
+      const ctaY = row4Y + valueSize + 100;
+      ctx.font = "37px 'Futura', 'Trebuchet MS', 'Futura', 'Segoe UI', sans-serif";
       ctx.fillStyle = color;
       ctx.textAlign = "center";
       ctx.textBaseline = "top";
-      ctx.fillText("Get yours dive wrapped at bit.ly/divewrapped", centerX, ctaY);
+      ctx.fillText("Get yours at bit.ly/divewrapped", canvas.width / 2, ctaY);
 
       ctx.restore();
 
@@ -584,10 +623,11 @@
       }
     }
 
-    function drawStat(x, y, label, value, labelSize, valueSize) {
-      ctx.font = `${labelSize}px 'Jersey 25', 'Trebuchet MS', 'Futura', 'Segoe UI', sans-serif`;
+    function drawStat(x, y, label, value, labelSize, valueSize, align = "left") {
+      ctx.textAlign = align;
+      ctx.font = `${labelSize}px 'Futura', 'Trebuchet MS', 'Futura', 'Segoe UI', sans-serif`;
       ctx.fillText(label, x, y);
-      ctx.font = `${valueSize}px 'Jersey 25', 'Trebuchet MS', 'Futura', 'Segoe UI', sans-serif`;
+      ctx.font = `${valueSize}px 'Futura', 'Trebuchet MS', 'Futura', 'Segoe UI', sans-serif`;
       ctx.fillText(value, x, y + labelSize + 3); // 3px spacing
     }
 
