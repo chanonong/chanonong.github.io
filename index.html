@@ -104,6 +104,7 @@
       display: flex;
       align-items: center;
       gap: 8px;
+      flex-wrap: wrap;
     }
     .help a {
       color: var(--text);
@@ -215,6 +216,7 @@
             <div style="display:flex; gap:8px; align-items:center;">
               <button type="button" class="upload-btn" id="file-trigger">Upload CSV</button>
               <input id="file-input" class="file-input" type="file" accept=".csv" />
+              <span style="color:var(--muted); font-size:12px;">(supports Garmin & Shearwater exports)</span>
             </div>
           </label>
           <label>
@@ -235,10 +237,23 @@
         </div>
       </div>
       <div class="status" id="status">Waiting for CSV...</div>
-      <div class="help">
-        <span>Need to export from Garmin?</span>
-        <a href="https://support.garmin.com/en-US/?faq=NxZWyZYGqL17VNBMKDUjb5" target="_blank" rel="noreferrer">Help (?)</a>
-      </div>
+      <details class="help">
+        <summary style="cursor:pointer;">Need help exporting?</summary>
+        <div style="margin-top:6px; display:flex; flex-direction:column; gap:6px;">
+          <details>
+            <summary style="cursor:pointer;">Garmin</summary>
+            <div style="margin-top:4px; display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+              <a href="https://support.garmin.com/en-US/?faq=NxZWyZYGqL17VNBMKDUjb5" target="_blank" rel="noreferrer">Garmin export guide</a>
+            </div>
+          </details>
+          <details>
+            <summary style="cursor:pointer;">Shearwater</summary>
+            <div style="margin-top:4px; color:var(--muted); font-size:13px;">
+              Export logbook CSV summary (include Max Depth / Max Time / Start Date columns).
+            </div>
+          </details>
+        </div>
+      </details>
       <details class="table-wrap" aria-label="Dive selection">
         <summary style="padding:8px 10px; cursor:pointer;">Pick your Dives</summary>
         <div style="padding: 0 10px 10px;">
@@ -351,13 +366,13 @@
     }
 
     function summarize(rows, headers, year) {
-      const idx = name => headers.findIndex(h => h.toLowerCase() === name.toLowerCase());
-      const dateIdx = idx("Date");
-      const diveTimeIdx = idx("Time");
-      const maxDepthIdx = idx("Max Depth");
+      const find = names => headers.findIndex(h => names.includes(h.toLowerCase()));
+      const dateIdx = find(["date", "start date"]);
+      const diveTimeIdx = find(["time", "dive time", "max time"]);
+      const maxDepthIdx = find(["max depth", "depth"]);
 
       if (dateIdx === -1 || diveTimeIdx === -1 || maxDepthIdx === -1) {
-        throw new Error("CSV missing Date, Dive Time, or Max Depth columns.");
+        throw new Error("CSV missing Date/Start Date, Time/Dive Time/Max Time, or Max Depth columns.");
       }
 
       let count = 0;
@@ -372,14 +387,21 @@
         const dt = parseDate(dateStr);
         if (!dt || dt.getFullYear() !== year) continue;
 
-        const diveSeconds = parseDuration(row[diveTimeIdx]);
+        let diveSeconds = parseDuration(row[diveTimeIdx]);
+        if (!Number.isFinite(diveSeconds) || diveSeconds <= 0) {
+          const numeric = parseNumber(row[diveTimeIdx]);
+          if (Number.isFinite(numeric) && numeric > 0) {
+            // Heuristic: Shearwater Max Time exported in minutes
+            diveSeconds = numeric < 1000 ? numeric * 60 : numeric;
+          }
+        }
         if (!Number.isFinite(diveSeconds) || diveSeconds <= 0) continue;
 
         count += 1;
         totalTime += diveSeconds;
         if (diveSeconds > longest) longest = diveSeconds;
 
-        const depth = parseNumber(row[maxDepthIdx]);
+      const depth = parseNumber(row[maxDepthIdx]);
         if (Number.isFinite(depth) && depth > 0) {
           totalDepth += depth;
           depthCount += 1;
@@ -457,8 +479,9 @@
     }
 
     function renderTable() {
-      const dateIdx = state.headers.findIndex(h => h.toLowerCase() === "date");
-      const titleIdx = state.headers.findIndex(h => h.toLowerCase() === "title");
+      const headerLower = state.headers.map(h => h.toLowerCase());
+      const dateIdx = headerLower.findIndex(h => h === "date" || h === "start date");
+      const titleIdx = headerLower.findIndex(h => h === "title" || h === "dive number");
       if (!state.rows.length || dateIdx === -1) {
         tbodyEl.innerHTML = `<tr><td colspan="3" style="text-align:center;color:var(--muted);">No dives to display</td></tr>`;
         return;
@@ -542,6 +565,14 @@
       drawStat(col2X, row2Y, "Max depth", `${maxDepth.toFixed(1)} m`, labelSize, valueSize);
       drawStat(col1X, row3Y, "Average Depth", `${avgDepth.toFixed(1)} m`, labelSize, valueSize);
       drawStat(col2X, row3Y, "Max Dive Time", formatMinutes(longest), labelSize, valueSize);
+
+      // CTA just below stats
+      const ctaY = row3Y + valueSize + 60;
+      ctx.font = "28px 'Jersey 25', 'Trebuchet MS', 'Futura', 'Segoe UI', sans-serif";
+      ctx.fillStyle = color;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "top";
+      ctx.fillText("Get yours at bit.ly/divewrapped", centerX, ctaY);
 
       ctx.restore();
 
