@@ -274,7 +274,7 @@
     </div>
     <div class="render-output">
       <img id="rendered-img" class="render-img" alt="Scuba summary preview (long-press to save)" title="Long-press to save on mobile" />
-      <canvas id="card" width="1080" height="1920" aria-label="Dive summary card"></canvas>
+      <canvas id="card" width="1440" height="2560" aria-label="Dive summary card"></canvas>
     </div>
     <div class="mobile-tip" aria-hidden="true">Tip: long-press the image to download on mobile.</div>
   </div>
@@ -542,11 +542,11 @@
 
       const centerX = canvas.width / 2;
       const titleY = canvas.height * 0.18;
-      ctx.font = "78px 'Jersey 25', 'Trebuchet MS', 'Futura', 'Segoe UI', sans-serif";
+      ctx.font = "104px 'Jersey 25', 'Trebuchet MS', 'Futura', 'Segoe UI', sans-serif";
       ctx.fillText("SCUBA", centerX, titleY);
 
-      ctx.font = "83px 'Jersey 25', 'Trebuchet MS', 'Futura', 'Segoe UI', sans-serif";
-      ctx.fillText(`${year}`, centerX, titleY + 60);
+      ctx.font = "110px 'Jersey 25', 'Trebuchet MS', 'Futura', 'Segoe UI', sans-serif";
+      ctx.fillText(`${year}`, centerX, titleY + 80);
 
       const gridTop = canvas.height * 0.26;
       const gridHeight = canvas.height * 0.38;
@@ -556,8 +556,8 @@
       const row2Y = gridTop + gridHeight / 3;
       const row3Y = gridTop + (2 * gridHeight) / 3;
 
-      const labelSize = 40; // 15% larger labels for subjects
-      const valueSize = 69;
+      const labelSize = 53; // larger labels for subjects
+      const valueSize = 92;
 
       drawStat(col1X, row1Y, "Total Dives", count.toString(), labelSize, valueSize);
       drawStat(col2X, row1Y, "Total Dive Time", formatDurationLong(totalTime), labelSize, valueSize);
@@ -567,12 +567,12 @@
       drawStat(col2X, row3Y, "Max Dive Time", formatMinutes(longest), labelSize, valueSize);
 
       // CTA just below stats
-      const ctaY = row3Y + valueSize + 60;
-      ctx.font = "28px 'Jersey 25', 'Trebuchet MS', 'Futura', 'Segoe UI', sans-serif";
+      const ctaY = row3Y + valueSize + 80;
+      ctx.font = "37px 'Jersey 25', 'Trebuchet MS', 'Futura', 'Segoe UI', sans-serif";
       ctx.fillStyle = color;
       ctx.textAlign = "center";
       ctx.textBaseline = "top";
-      ctx.fillText("Get yours at bit.ly/divewrapped", centerX, ctaY);
+      ctx.fillText("Get yours dive wrapped at bit.ly/divewrapped", centerX, ctaY);
 
       ctx.restore();
 
