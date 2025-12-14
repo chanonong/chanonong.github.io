@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dive Wrapped</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Jersey+25&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #111827;
+      --accent: #fc4c02;
+      --accent-2: #ff7847;
+      --muted: #94a3b8;
+      --text: #e5e7eb;
+      --font: "Jersey 25", "Trebuchet MS", "Futura", "Segoe UI", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: radial-gradient(circle at 20% 20%, rgba(252,76,2,0.12), transparent 25%), radial-gradient(circle at 80% 10%, rgba(255,120,71,0.12), transparent 20%), var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      display: grid;
+      place-items: center;
+      padding: 24px;
+    }
+    .shell {
+      width: min(1200px, 100%);
+      background: var(--panel);
+      border: 1px solid #1f2937;
+      border-radius: 18px;
+      padding: 24px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 20px;
+      align-items: start;
+    }
+    h1 {
+      margin: 0 0 6px;
+      font-size: 28px;
+      letter-spacing: -0.02em;
+    }
+    p { margin: 6px 0 18px; color: var(--muted); }
+    .controls {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 18px;
+      align-items: stretch;
+    }
+    label {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    input[type="file"], input[type="number"], button {
+      background: #0b1220;
+      color: var(--text);
+      border: 1px solid #1f2937;
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 14px;
+    }
+    input[type="number"] { width: 110px; }
+    button {
+      cursor: pointer;
+      border: none;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      color: #0b0b0b;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      transition: transform 120ms ease, box-shadow 120ms ease;
+      box-shadow: 0 12px 30px rgba(252,76,2,0.35);
+    }
+    button:active { transform: translateY(1px); box-shadow: 0 8px 20px rgba(252,76,2,0.25); }
+    .status { margin: 8px 0 12px; color: var(--muted); font-size: 13px; }
+    .table-wrap {
+      max-height: 320px;
+      overflow: auto;
+      border: 1px solid #1f2937;
+      border-radius: 12px;
+      background: #0b1220;
+      margin-top: 12px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      color: var(--text);
+      font-size: 13px;
+    }
+    thead {
+      background: #0f172a;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+    th, td {
+      padding: 8px 10px;
+      border-bottom: 1px solid #1f2937;
+    }
+    th { text-align: left; color: var(--muted); }
+    tbody tr:hover { background: rgba(255,255,255,0.03); }
+    @media (max-width: 1024px) {
+      body { padding: 16px; }
+      .shell {
+        grid-template-columns: 1fr;
+        width: 100%;
+      }
+      .controls {
+        flex-direction: column;
+      }
+      .table-wrap {
+        max-height: 40vh;
+      }
+      canvas {
+        width: 100%;
+        max-width: 100%;
+        justify-self: stretch;
+      }
+      h1 {
+        font-size: 24px;
+      }
+    }
+    canvas {
+      width: min(450px, 100%);
+      height: auto;
+      border-radius: 16px;
+      border: 1px solid #1f2937;
+      display: block;
+      justify-self: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <div>
+      <h1>Dive Wrapped</h1>
+      <div class="controls">
+        <label>
+          CSV file
+          <input id="file-input" type="file" accept=".csv" />
+        </label>
+        <label>
+          Year to summarize
+          <input id="year-input" type="number" value="2025" min="1990" max="2100" />
+        </label>
+        <button id="generate-btn" type="button">Generate image</button>
+        <button id="download-btn" type="button">Download PNG</button>
+      </div>
+      <div class="status" id="status">Waiting for CSV...</div>
+      <div class="table-wrap" aria-label="Dive selection">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:40px;">Use</th>
+              <th>Date</th>
+              <th>Title</th>
+            </tr>
+          </thead>
+          <tbody id="dive-rows">
+            <tr><td colspan="3" style="text-align:center;color:var(--muted);">No CSV loaded</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <canvas id="card" width="1080" height="1920" aria-label="Dive summary card"></canvas>
+  </div>
+  <script>
+    const state = {
+      rows: [],
+      headers: [],
+      summary: null,
+      selected: []
+    };
+
+    const statusEl = document.getElementById("status");
+    const canvas = document.getElementById("card");
+    const ctx = canvas.getContext("2d");
+    ctx.imageSmoothingEnabled = false;
+    const tbodyEl = document.getElementById("dive-rows");
+
+    document.getElementById("file-input").addEventListener("change", handleFile);
+    document.getElementById("generate-btn").addEventListener("click", () => {
+      if (!state.rows.length) {
+        setStatus("Please load a CSV first.");
+        return;
+      }
+      const year = parseInt(document.getElementById("year-input").value, 10);
+      const activeRows = state.rows.filter((_, idx) => state.selected[idx]);
+      state.summary = summarize(activeRows, state.headers, year);
+      renderWithFonts(state.summary, year);
+    });
+    document.getElementById("download-btn").addEventListener("click", () => {
+      if (!state.rows.length) {
+        setStatus("Please load a CSV first.");
+        return;
+      }
+      const year = parseInt(document.getElementById("year-input").value, 10);
+      const activeRows = state.rows.filter((_, idx) => state.selected[idx]);
+      state.summary = summarize(activeRows, state.headers, year);
+      renderWithFonts(state.summary, year);
+      const link = document.createElement("a");
+      link.download = "dive-wrapped.png";
+      link.href = canvas.toDataURL("image/png");
+      link.click();
+    });
+
+    function setStatus(msg) {
+      statusEl.textContent = msg;
+    }
+
+    function handleFile(event) {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      if (file.type && file.type !== "text/csv" && file.type !== "application/vnd.ms-excel") {
+        setStatus("Please upload a CSV file.");
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const text = reader.result.toString();
+          const rows = parseCSV(text.trim());
+          if (!rows.length) throw new Error("No rows found");
+          state.headers = rows.shift().map(h => h.trim());
+          state.rows = rows;
+          state.selected = rows.map(() => true);
+          renderTable();
+          setStatus(`Loaded ${rows.length} rows. ${rows.length} selected.`);
+        } catch (err) {
+          console.error(err);
+          setStatus("Problem reading CSV. Make sure it is a plain CSV export.");
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    // Minimal CSV parser that respects quoted fields and commas inside quotes.
+    function parseCSV(text) {
+      const rows = [];
+      let current = [];
+      let field = "";
+      let inQuotes = false;
+
+      for (let i = 0; i < text.length; i++) {
+        const char = text[i];
+        const next = text[i + 1];
+        if (char === '"' && inQuotes && next === '"') {
+          field += '"';
+          i++;
+        } else if (char === '"') {
+          inQuotes = !inQuotes;
+        } else if (char === "," && !inQuotes) {
+          current.push(field);
+          field = "";
+        } else if ((char === "\n" || char === "\r") && !inQuotes) {
+          if (field || current.length) {
+            current.push(field);
+            rows.push(current);
+            current = [];
+            field = "";
+          }
+        } else {
+          field += char;
+        }
+      }
+      if (field || current.length) {
+        current.push(field);
+        rows.push(current);
+      }
+      return rows.filter(r => r.some(cell => cell.trim().length));
+    }
+
+    function summarize(rows, headers, year) {
+      const idx = name => headers.findIndex(h => h.toLowerCase() === name.toLowerCase());
+      const dateIdx = idx("Date");
+      const diveTimeIdx = idx("Time");
+      const maxDepthIdx = idx("Max Depth");
+
+      if (dateIdx === -1 || diveTimeIdx === -1 || maxDepthIdx === -1) {
+        throw new Error("CSV missing Date, Dive Time, or Max Depth columns.");
+      }
+
+      let count = 0;
+      let totalTime = 0;
+      let longest = 0;
+      let totalDepth = 0;
+      let depthCount = 0;
+      let maxDepth = 0;
+
+      for (const row of rows) {
+        const dateStr = row[dateIdx];
+        const dt = parseDate(dateStr);
+        if (!dt || dt.getFullYear() !== year) continue;
+
+        const diveSeconds = parseDuration(row[diveTimeIdx]);
+        if (!Number.isFinite(diveSeconds) || diveSeconds <= 0) continue;
+
+        count += 1;
+        totalTime += diveSeconds;
+        if (diveSeconds > longest) longest = diveSeconds;
+
+        const depth = parseNumber(row[maxDepthIdx]);
+        if (Number.isFinite(depth) && depth > 0) {
+          totalDepth += depth;
+          depthCount += 1;
+          if (depth > maxDepth) maxDepth = depth;
+        }
+      }
+
+      const avgTime = count ? totalTime / count : 0;
+      const avgDepth = depthCount ? totalDepth / depthCount : 0;
+
+      setStatus(`Found ${count} dives in ${year} (selected rows only).`);
+      return {
+        count,
+        totalTime,
+        avgTime,
+        longest,
+        avgDepth,
+        maxDepth
+      };
+    }
+
+    function parseDate(value) {
+      if (!value) return null;
+      const parsed = new Date(value);
+      if (!Number.isNaN(parsed.getTime())) return parsed;
+      // Fallback for MM/DD/YYYY
+      const parts = value.split(/[/-]/).map(p => parseInt(p, 10));
+      if (parts.length >= 3) {
+        const [m, d, y] = parts;
+        return new Date(y, m - 1, d);
+      }
+      return null;
+    }
+
+    function parseDuration(value) {
+      if (!value) return NaN;
+      const cleaned = value.toString().trim();
+      const parts = cleaned.split(":").map(p => parseFloat(p));
+      if (parts.some(n => Number.isNaN(n))) return NaN;
+      if (parts.length === 3) {
+        const [h, m, s] = parts;
+        return h * 3600 + m * 60 + s;
+      }
+      if (parts.length === 2) {
+        const [m, s] = parts;
+        return m * 60 + s;
+      }
+      return parseFloat(cleaned);
+    }
+
+    function parseNumber(value) {
+      if (value == null) return NaN;
+      const cleaned = value.toString().replace(/[^\d.+-]/g, "");
+      const num = parseFloat(cleaned);
+      return Number.isFinite(num) ? num : NaN;
+    }
+
+    function sanitizeText(value) {
+      return String(value ?? "").replace(/[\u0000-\u001F\u007F]/g, "");
+    }
+
+    function formatMinutes(seconds) {
+      const mins = seconds / 60;
+      return `${mins.toFixed(1)} min`;
+    }
+
+    function formatDurationLong(seconds) {
+      if (!Number.isFinite(seconds)) return "0";
+      const h = Math.floor(seconds / 3600);
+      const m = Math.floor((seconds % 3600) / 60);
+      const s = Math.floor(seconds % 60);
+      if (h > 0) return `${h}h ${m}m`;
+      if (m > 0) return `${m}m ${s}s`;
+      return `${s}s`;
+    }
+
+    function renderTable() {
+      const dateIdx = state.headers.findIndex(h => h.toLowerCase() === "date");
+      const titleIdx = state.headers.findIndex(h => h.toLowerCase() === "title");
+      if (!state.rows.length || dateIdx === -1) {
+        tbodyEl.innerHTML = `<tr><td colspan="3" style="text-align:center;color:var(--muted);">No dives to display</td></tr>`;
+        return;
+      }
+      const fragment = document.createDocumentFragment();
+      state.rows.forEach((row, idx) => {
+        const tr = document.createElement("tr");
+
+        const tdCheck = document.createElement("td");
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.checked = state.selected[idx];
+        checkbox.addEventListener("change", () => {
+          state.selected[idx] = checkbox.checked;
+          const count = state.selected.filter(Boolean).length;
+          setStatus(`Loaded ${state.rows.length} rows. ${count} selected.`);
+        });
+        tdCheck.appendChild(checkbox);
+        tr.appendChild(tdCheck);
+
+        const tdDate = document.createElement("td");
+        tdDate.textContent = sanitizeText(row[dateIdx]);
+        tr.appendChild(tdDate);
+
+        const tdTitle = document.createElement("td");
+        tdTitle.textContent = titleIdx !== -1 ? sanitizeText(row[titleIdx]) : "";
+        tr.appendChild(tdTitle);
+
+        fragment.appendChild(tr);
+      });
+      tbodyEl.innerHTML = "";
+      tbodyEl.appendChild(fragment);
+    }
+
+    function renderWithFonts(summary, year) {
+      const ready = document.fonts?.ready;
+      if (ready && typeof ready.then === "function") {
+        ready.then(() => drawCard(summary, year));
+      } else {
+        drawCard(summary, year);
+      }
+    }
+
+    function drawCard(summary, year) {
+      const { count, totalTime, avgTime, longest, avgDepth, maxDepth } = summary;
+      ctx.clearRect(0, 0, canvas.width, canvas.height); // transparent background only
+
+      ctx.save();
+      ctx.textAlign = "center";
+      ctx.textBaseline = "top";
+      ctx.fillStyle = "#ffffff";
+
+      const centerX = canvas.width / 2;
+      const titleY = canvas.height * 0.08;
+      ctx.font = "68px 'Jersey 25', 'Trebuchet MS', 'Futura', 'Segoe UI', sans-serif";
+      ctx.fillText("Dive Wrapped", centerX, titleY);
+
+      ctx.font = "72px 'Jersey 25', 'Trebuchet MS', 'Futura', 'Segoe UI', sans-serif";
+      ctx.fillText(`${year}`, centerX, titleY + 80);
+
+      const gridTop = canvas.height * 0.24;
+      const gridHeight = canvas.height * 0.5;
+      const col1X = canvas.width * 0.3;
+      const col2X = canvas.width * 0.7;
+      const row1Y = gridTop;
+      const row2Y = gridTop + gridHeight / 3;
+      const row3Y = gridTop + (2 * gridHeight) / 3;
+
+      const labelSize = 35; // 25% larger labels for subjects
+      const valueSize = 60;
+
+      drawStat(col1X, row1Y, "Total Dives", count.toString(), labelSize, valueSize);
+      drawStat(col2X, row1Y, "Total Dive Time", formatDurationLong(totalTime), labelSize, valueSize);
+      drawStat(col1X, row2Y, "Average Dive Time", formatMinutes(avgTime), labelSize, valueSize);
+      drawStat(col2X, row2Y, "Max depth", `${maxDepth.toFixed(1)} m`, labelSize, valueSize);
+      drawStat(col1X, row3Y, "Average Depth", `${avgDepth.toFixed(1)} m`, labelSize, valueSize);
+      drawStat(col2X, row3Y, "Max Dive Time", formatMinutes(longest), labelSize, valueSize);
+
+      ctx.restore();
+    }
+
+    function drawStat(x, y, label, value, labelSize, valueSize) {
+      ctx.font = `${labelSize}px 'Jersey 25', 'Trebuchet MS', 'Futura', 'Segoe UI', sans-serif`;
+      ctx.fillText(label, x, y);
+      ctx.font = `${valueSize}px 'Jersey 25', 'Trebuchet MS', 'Futura', 'Segoe UI', sans-serif`;
+      ctx.fillText(value, x, y + labelSize + 3); // 3px spacing
+    }
+
+    renderWithFonts({ count: 0, totalTime: 0, avgTime: 0, longest: 0, avgDepth: 0, maxDepth: 0 }, new Date().getFullYear());
+  </script>
+</body>
+</html>
