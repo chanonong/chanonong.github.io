@@ -15,7 +15,7 @@
       --accent-2: #ff7847;
       --muted: #94a3b8;
       --text: #e5e7eb;
-      --font: "Bebas Neue", "Jersey 25", "Trebuchet MS", "Futura", "Segoe UI", sans-serif;
+      --font: "Futura", "Jersey 25", "Trebuchet MS", "Futura", "Segoe UI", sans-serif;
     }
     * { box-sizing: border-box; }
     body {
@@ -472,7 +472,7 @@
 
     function formatMinutes(seconds) {
       const mins = seconds / 60;
-      return `${mins.toFixed(1)}m`;
+      return `${mins.toFixed(1)} min`;
     }
 
     function formatDurationLong(seconds) {
@@ -558,18 +558,18 @@
 
       const titleInputEl = document.getElementById("title-input");
       const customTitle = titleInputEl?.value?.trim() ? titleInputEl.value.trim() : `${year} wrapped`;
-      const col2Right = canvas.width * 0.82; // shared right edge
+      const col2Right = canvas.width * 0.85; // shared right edge
       const row1Bottom = row1Y + rowHeight - 50; // padding from bottom of row 1
 
       // Row 1, Col 1: custom title (center, bottom aligned)
       ctx.textBaseline = "bottom";
-      ctx.font = "68px 'Bebas Neue', 'Trebuchet MS', 'Futura', 'Segoe UI', sans-serif";
+      ctx.font = "68px 'Futura', 'Trebuchet MS', 'Futura', 'Segoe UI', sans-serif";
       ctx.textAlign = "right";
       ctx.fillText(customTitle, col2Right, row1Bottom);
 
       // Row 1, Col 2: icon + SCUBA (center aligned within column, bottom aligned)
       ctx.textAlign = "right";
-      ctx.font = "68px 'Bebas Neue', 'Trebuchet MS', 'Futura', 'Segoe UI', sans-serif";
+      ctx.font = "68px 'Futura', 'Trebuchet MS', 'Futura', 'Segoe UI', sans-serif";
       const scubaText = "SCUBA";
       const scubaWidth = ctx.measureText(scubaText).width;
       const logoScale = 0.65;
