@@ -472,7 +472,7 @@
 
     function formatMinutes(seconds) {
       const mins = seconds / 60;
-      return `${mins.toFixed(1)} min`;
+      return `${mins.toFixed(1)}m`;
     }
 
     function formatDurationLong(seconds) {
@@ -601,8 +601,8 @@
       drawStat(statsCol2, row2Y, "Total Dive Time", formatDurationLong(totalTime), labelSize, valueSize, "center");
       drawStat(statsCol1, row3Y, "Average Dive Time", formatMinutes(avgTime), labelSize, valueSize, "center");
       drawStat(statsCol2, row3Y, "Max Dive Time", formatMinutes(longest), labelSize, valueSize, "center");
-      drawStat(statsCol1, row4Y, "Average Depth", `${avgDepth.toFixed(1)} m`, labelSize, valueSize, "center");
-      drawStat(statsCol2, row4Y, "Max Depth", `${maxDepth.toFixed(1)} m`, labelSize, valueSize, "center");
+      drawStat(statsCol1, row4Y, "Average Depth", `${avgDepth.toFixed(1)}m`, labelSize, valueSize, "center");
+      drawStat(statsCol2, row4Y, "Max Depth", `${maxDepth.toFixed(1)}m`, labelSize, valueSize, "center");
       
 
       // CTA just below stats
